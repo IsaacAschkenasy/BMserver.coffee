@@ -1,0 +1,149 @@
+<html>
+    <head>
+        <title>Coffee Login</title>
+        <link rel="icon" href="{{ url_for('static', filename='coffee_icon.png') }}" type="image/png">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                min-height: 100vh;
+                min-height: 100svh;
+                margin: 0;
+                padding: 24px 16px;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                gap: 12px;
+                text-align: center;
+                background-image: url("{{ url_for('static', filename='coffeebean_background.jpg') }}");
+                background-size: cover;
+                font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif, Times, serif, serif;
+                background-color: #f4f4f4;
+            }
+            .dev {
+                background-image: url("../static/coffeebean_background.jpg");
+            }
+            h1 {
+                margin: 0;
+                padding: 10px;
+                font-size: clamp(2.5rem, 8vw, 5.625rem);
+                color: #FFF;
+                text-shadow: 2px 2px 4px rgba(100, 100, 100, 0.5);
+            }
+            .login-form {
+                width: min(100%, 700px);
+                text-align: center;
+                background-color: rgba(240, 240, 240, 0.75);
+                padding: 30px clamp(20px, 5vw, 50px);
+                border-radius: 20px;
+                box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            }
+            form section {
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) minmax(0, 300px);
+                align-items: center;
+                gap: 15px;
+                width: 100%;
+                margin: 15px 0;
+                font-size: 23px;
+            }
+            label {
+                text-align: left;
+            }
+            input {
+                width: 100%;
+                padding: 10px;
+                margin-top: 5px;
+                border: 1px solid #ccc;
+                border-radius: 5px;
+                box-sizing: border-box;
+                font-size: 16px;
+            }
+            button {
+                width: 100%;
+                margin-top: 20px;
+                padding: 13px;
+                background-color: #caa359;
+                color: white;
+                border: none;
+                border-radius: 5px;
+                cursor: pointer;
+            }
+            button:hover {
+                background-color: #5c3801;
+            }
+            @media (max-width: 1024px) {
+                .login-form {
+                    width: min(100%, 640px);
+                }
+                form section {
+                    grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+                    font-size: 21px;
+                }
+            }
+            @media (max-width: 768px) {
+                body {
+                    padding: 24px;
+                }
+                h1 {
+                    font-size: clamp(2.5rem, 9vw, 4.5rem);
+                }
+                .login-form {
+                    width: min(100%, 600px);
+                    padding: 28px clamp(20px, 5vw, 40px);
+                }
+                form section {
+                    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+                    gap: 12px;
+                    font-size: 20px;
+                }
+            }
+            @media (max-width: 480px) {
+                body {
+                    padding: 20px 16px;
+                    gap: 8px;
+                }
+                h1 {
+                    font-size: clamp(2rem, 10vw, 2.75rem);
+                }
+                .login-form {
+                    padding: 24px 20px;
+                    border-radius: 14px;
+                }
+                form section {
+                    grid-template-columns: 1fr;
+                    gap: 6px;
+                    margin: 12px 0;
+                    font-size: 18px;
+                }
+                button {
+                    margin-top: 12px;
+                }
+            }
+            @media (max-height: 600px) {
+                body {
+                    justify-content: flex-start;
+                }
+            }
+        </style>
+    </head>
+    <body class="dev">
+        <h1>Coffee Login</h1>
+        <div class="login-form">
+            <form action="{{ url_for('authenticate_user') }}" method="post">
+                <section>
+                    <label for="username">Username:</label>
+                    <input type="text" id="username" name="username" required>
+                </section>
+                <section>
+                    <label for="password">Password:</label>
+                    <input type="password" id="password" name="password" required>
+                </section>
+                <button type="submit" value="Login">Login</button>
+            </form>
+        </div>
+    </body>
+</html>
