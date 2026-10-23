@@ -26,6 +26,7 @@
                 overflow: hidden;
             }
             div.content {
+                position: relative;
                 width: 100%;
                 flex: 1;
                 height: auto;
@@ -37,6 +38,78 @@
                 padding: 30px;
                 border-radius: 20px;
                 box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            }
+            .settings-button {
+                position: absolute;
+                top: 18px;
+                right: 18px;
+                width: 42px;
+                height: 42px;
+                display: inline-flex;
+                justify-content: center;
+                align-items: center;
+                border: 0;
+                border-radius: 8px;
+                background: rgba(97, 54, 4, 0.12);
+                color: #613604;
+                cursor: pointer;
+            }
+            .settings-button:hover {
+                background: rgba(97, 54, 4, 0.22);
+            }
+            .settings-button svg {
+                width: 24px;
+                height: 24px;
+                fill: currentColor;
+            }
+            .settings-overlay[hidden],
+            .settings-dialog[hidden] {
+                display: none;
+            }
+            .settings-overlay {
+                position: fixed;
+                inset: 0;
+                z-index: 1100;
+                background: rgba(0, 0, 0, 0.55);
+            }
+            .settings-dialog {
+                position: fixed;
+                inset: 50% auto auto 50%;
+                transform: translate(-50%, -50%);
+                z-index: 1101;
+                width: min(900px, calc(100vw - 32px));
+                height: min(700px, calc(100vh - 32px));
+                overflow: hidden;
+                border-radius: 14px;
+                background: #f4f4f4;
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            }
+            .settings-dialog-header {
+                height: 48px;
+                display: flex;
+                justify-content: flex-end;
+                align-items: center;
+                padding: 6px 10px;
+            }
+            .settings-close {
+                width: 36px;
+                height: 36px;
+                border: 0;
+                border-radius: 6px;
+                background: transparent;
+                color: #613604;
+                font-size: 26px;
+                cursor: pointer;
+            }
+            .settings-close:hover {
+                background: rgba(97, 54, 4, 0.12);
+            }
+            .settings-dialog iframe {
+                display: block;
+                width: 100%;
+                height: calc(100% - 48px);
+                border: 0;
+                background: #fff;
             }
             h1 {
                 margin: 0;
@@ -335,6 +408,11 @@
     </head>
     <body>
         <div class="content">
+            <button type="button" class="settings-button" aria-label="Open settings" title="Settings">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M19.4 13a7.8 7.8 0 0 0 0-2l2-1.5-2-3.4-2.4 1a7.7 7.7 0 0 0-1.7-1L15 3.5h-4L10.6 6a7.7 7.7 0 0 0-1.7 1l-2.4-1-2 3.4 2 1.5a7.8 7.8 0 0 0 0 2l-2 1.5 2 3.4 2.4-1a7.7 7.7 0 0 0 1.7 1l.4 2.5h4l.4-2.5a7.7 7.7 0 0 0 1.7-1l2.4 1 2-3.4-2-1.5ZM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z"></path>
+                </svg>
+            </button>
             <h1>Coffee Admin</h1>
             <div class="namesettings">
                 <div class="donor-grid">
@@ -397,6 +475,13 @@
             </div>
             <p class="form-error" role="alert" hidden></p>
         </form>
+        <div class="settings-overlay" hidden></div>
+        <section class="settings-dialog" role="dialog" aria-modal="true" aria-label="Settings" hidden>
+            <div class="settings-dialog-header">
+                <button type="button" class="settings-close" aria-label="Close settings">&times;</button>
+            </div>
+            <iframe src="{{ url_for('admin_settings') }}" title="Settings"></iframe>
+        </section>
         <script>
             const donorForm = document.querySelector('form.donor');
             const overlay = document.querySelector('.overlay');
@@ -407,6 +492,29 @@
             const createDonorUrl = donorForm.action;
             const messageEditor = donorForm.querySelector('.message-editor');
             const messageInput = donorForm.elements.message;
+            const settingsButton = document.querySelector('.settings-button');
+            const settingsOverlay = document.querySelector('.settings-overlay');
+            const settingsDialog = document.querySelector('.settings-dialog');
+            const settingsCloseButton = document.querySelector('.settings-close');
+
+            function closeSettings() {
+                settingsOverlay.hidden = true;
+                settingsDialog.hidden = true;
+                settingsButton.focus();
+            }
+
+            settingsButton.addEventListener('click', () => {
+                settingsOverlay.hidden = false;
+                settingsDialog.hidden = false;
+                settingsCloseButton.focus();
+            });
+            settingsCloseButton.addEventListener('click', closeSettings);
+            settingsOverlay.addEventListener('click', closeSettings);
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape' && !settingsDialog.hidden) {
+                    closeSettings();
+                }
+            });
 
             donorForm.querySelectorAll('.message-toolbar [data-command]').forEach((button) => {
                 button.addEventListener('mousedown', (event) => event.preventDefault());

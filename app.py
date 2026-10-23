@@ -152,6 +152,12 @@ def admin():
         donors=get_donors(),
     )
 
+@app.route('/admin/settings')
+def admin_settings():
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+    return render_template('settings.html')
+
 @app.route('/admin/create', methods=['POST'])
 def create_donor():
     if not session.get('logged_in'):
