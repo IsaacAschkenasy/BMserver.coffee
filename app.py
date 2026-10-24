@@ -13,7 +13,7 @@ app.secret_key = os.environ.get("SECRET_KEY", os.urandom(24))
 if os.path.exists('/app'):
     DB_PATH = '/app/data/data.db'
 else:
-    DB_PATH = os.path.join(os.getcwd(), 'data.db')
+    DB_PATH = './data.db'
 # Get username and password, default to admin/ChangeMe123! if not set in environment variables
 ADMIN_USERNAME = os.environ.get("ADMIN_USER", "admin")
 ADMIN_PASSWORD_HASH = generate_password_hash(os.environ.get("ADMIN_PASS", "ChangeMe123!"))
