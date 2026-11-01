@@ -16,7 +16,6 @@ app.secret_key = os.environ.get("SECRET_KEY", os.urandom(24))
 if os.path.exists('/app'):
     DB_PATH = '/app/data/data.db'
 else:
-<<<<<<< HEAD
     DB_PATH = os.path.join(os.getcwd(), 'data.db')
 SETTINGS_PATH = os.environ.get(
     "SETTINGS_PATH",
@@ -119,12 +118,6 @@ def public_settings():
 settings = load_settings()
 ADMIN_USERNAME = settings["admin_username"]
 ADMIN_PASSWORD_HASH = settings["admin_password_hash"]
-=======
-    DB_PATH = './data.db'
-# Get username and password, default to admin/ChangeMe123! if not set in environment variables
-ADMIN_USERNAME = os.environ.get("ADMIN_USER", "admin")
-ADMIN_PASSWORD_HASH = generate_password_hash(os.environ.get("ADMIN_PASS", "ChangeMe123!"))
->>>>>>> f4da0ae50cf44346139296ef70e7df62d289a344
 
 class MessageHTMLSanitizer(HTMLParser):
     allowed_tags = {"b", "strong", "i", "em", "ul", "li", "br", "p", "div"}
