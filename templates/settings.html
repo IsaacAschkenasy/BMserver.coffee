@@ -11,39 +11,43 @@
             body {
                 margin: 0;
                 min-height: 100vh;
-                padding: 24px;
-                background: rgba(239, 226, 207, 0.96);
+                padding: 28px;
+                background: #f7f2e9;
                 color: #613604;
-                font-family: 'Gill Sans', 'Gill Sans MT', Calibri, sans-serif;
+                font-family: Calibri, sans-serif;
             }
             main {
-                width: min(100%, 720px);
+                width: min(100%, 760px);
                 margin: 0 auto;
             }
             h1 {
-                margin: 0 0 18px;
-                font-size: 32px;
+                margin: 0 0 22px;
+                font-size: clamp(26px, 4vw, 34px);
                 color: #613604;
+                letter-spacing: -0.035em;
             }
             fieldset {
-                margin: 0 0 18px;
-                padding: 18px;
-                border: 1px solid rgba(97, 54, 4, 0.3);
-                border-radius: 12px;
-                background: rgba(255, 255, 255, 0.46);
+                margin: 0 0 20px;
+                padding: 22px;
+                border: 1px solid rgba(97, 54, 4, 0.12);
+                border-radius: 16px;
+                background: rgba(255, 255, 255, 0.72);
+                box-shadow: 0 8px 26px rgba(69, 45, 17, 0.055);
             }
             legend {
-                padding: 0 8px;
-                font-size: 20px;
+                padding: 0 10px;
+                font-size: 30px;
                 font-weight: bold;
+                letter-spacing: -0.01em;
             }
             .field {
                 display: grid;
-                gap: 6px;
-                margin: 12px 0;
+                gap: 8px;
+                margin: 25px 0;
             }
             label {
                 font-weight: 600;
+                font-size: 25px;
             }
             input[type="text"],
             input[type="password"],
@@ -51,13 +55,22 @@
             select,
             textarea {
                 width: 100%;
-                min-height: 42px;
-                padding: 8px 10px;
-                border: 1px solid #b9a78f;
-                border-radius: 6px;
-                background: #fffdf9;
+                min-height: 46px;
+                padding: 10px 12px;
+                border: 1px solid #d5c8b5;
+                border-radius: 10px;
+                background: #fffefa;
                 color: #33200d;
                 font: inherit;
+                transition: border-color 150ms ease, box-shadow 150ms ease;
+            }
+            input[type="text"]:focus,
+            input[type="number"]:focus,
+            select:focus,
+            textarea:focus {
+                outline: none;
+                border-color: #9c7045;
+                box-shadow: 0 0 0 3px rgba(139, 94, 52, 0.15);
             }
             .color-control {
                 display: flex;
@@ -68,9 +81,10 @@
                 width: 48px;
                 height: 42px;
                 padding: 3px;
-                border: 1px solid #b9a78f;
-                border-radius: 6px;
-                background: #fffdf9;
+                border: 1px solid #d5c8b5;
+                border-radius: 10px;
+                background: #fffefa;
+                cursor: pointer;
             }
             input[type="range"] {
                 width: 100%;
@@ -78,27 +92,33 @@
             }
             .hint {
                 margin: 2px 0 0;
-                color: #684d31;
+                color: #78634c;
                 font-size: 14px;
+                line-height: 1.45;
             }
             .save-row {
                 display: flex;
+                flex-wrap: wrap;
                 align-items: center;
-                gap: 14px;
+                gap: 12px;
             }
             button[type="submit"] {
-                min-height: 44px;
-                padding: 9px 20px;
+                min-height: 46px;
+                padding: 10px 22px;
                 border: 0;
-                border-radius: 7px;
-                background: #8b5e34;
+                border-radius: 11px;
+                background: linear-gradient(135deg, #96683d, #70451f);
                 color: white;
                 font: inherit;
                 font-weight: bold;
                 cursor: pointer;
+                box-shadow: 0 5px 12px rgba(97, 54, 4, 0.18);
+                transition: transform 150ms ease, box-shadow 150ms ease, filter 150ms ease;
             }
             button[type="submit"]:hover {
-                background: #5c3801;
+                transform: translateY(-1px);
+                box-shadow: 0 8px 16px rgba(97, 54, 4, 0.23);
+                filter: brightness(1.05);
             }
             button:disabled {
                 cursor: wait;
@@ -107,16 +127,23 @@
             #save-status {
                 margin: 0;
                 font-size: 15px;
+                color: #4c6a3d;
             }
             #save-status.error {
                 color: #a00000;
             }
+            @media (prefers-reduced-motion: reduce) {
+                input,
+                button[type="submit"] {
+                    transition: none;
+                }
+            }
             @media (max-width: 480px) {
                 body {
-                    padding: 16px;
+                    padding: 22px 18px;
                 }
                 fieldset {
-                    padding: 14px;
+                    padding: 18px;
                 }
             }
         </style>

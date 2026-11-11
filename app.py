@@ -34,7 +34,7 @@ def default_settings():
         "start_frame": "",
         "admin_username": os.environ.get("ADMIN_USER", "admin"),
         "admin_password_hash": generate_password_hash(
-            os.environ.get("ADMIN_PASS", "ChangeMe123!")
+            os.environ.get("ADMIN_PASS", "admin")
         ),
     }
 

@@ -69,53 +69,99 @@
                 fill: currentColor;
             }
             .settings-overlay[hidden],
-            .settings-dialog[hidden] {
+            .settings-dialog[hidden],
+            .profile-dialog[hidden] {
                 display: none;
             }
             .settings-overlay {
                 position: fixed;
                 inset: 0;
                 z-index: 1100;
-                background: rgba(0, 0, 0, 0.55);
+                background: rgba(29, 22, 14, 0.48);
+                -webkit-backdrop-filter: blur(7px);
+                backdrop-filter: blur(7px);
             }
-            .settings-dialog {
+            .settings-dialog,
+            .profile-dialog {
                 position: fixed;
                 inset: 50% auto auto 50%;
                 transform: translate(-50%, -50%);
                 z-index: 1101;
                 width: min(900px, calc(100vw - 32px));
-                height: min(700px, calc(100vh - 32px));
+                height: min(760px, calc(100vh - 40px));
                 overflow: hidden;
-                border-radius: 14px;
-                background: #f4f4f4;
-                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+                border: 1px solid rgba(255, 255, 255, 0.72);
+                border-radius: 20px;
+                background: #f7f2e9;
+                box-shadow: 0 28px 90px rgba(35, 22, 8, 0.34), 0 4px 14px rgba(35, 22, 8, 0.12);
+                animation: dialog-enter 180ms ease-out;
             }
-            .settings-dialog-header {
-                height: 48px;
+            .profile-dialog {
+                width: min(620px, calc(100vw - 32px));
+            }
+            .settings-dialog-header,
+            .profile-dialog-header {
+                height: 58px;
                 display: flex;
                 justify-content: flex-end;
                 align-items: center;
-                padding: 6px 10px;
+                padding: 8px 14px;
+                border-bottom: 1px solid rgba(97, 54, 4, 0.1);
+                background: rgba(255, 255, 255, 0.58);
             }
-            .settings-close {
-                width: 36px;
-                height: 36px;
+            .settings-close,
+            .profile-close {
+                width: 38px;
+                height: 38px;
                 border: 0;
-                border-radius: 6px;
-                background: transparent;
+                border-radius: 11px;
+                background: rgba(97, 54, 4, 0.07);
                 color: #613604;
-                font-size: 26px;
+                font-size: 25px;
+                line-height: 1;
                 cursor: pointer;
+                transition: background 150ms ease, transform 150ms ease;
             }
-            .settings-close:hover {
-                background: rgba(97, 54, 4, 0.12);
+            .settings-close:hover,
+            .profile-close:hover {
+                background: rgba(97, 54, 4, 0.15);
+                transform: rotate(4deg);
             }
-            .settings-dialog iframe {
+            .settings-dialog iframe,
+            .profile-dialog iframe {
                 display: block;
                 width: 100%;
-                height: calc(100% - 48px);
+                height: calc(100% - 58px);
                 border: 0;
-                background: #fff;
+                background: #f7f2e9;
+            }
+            @keyframes dialog-enter {
+                from {
+                    opacity: 0;
+                    transform: translate(-50%, -48%) scale(0.985);
+                }
+                to {
+                    opacity: 1;
+                    transform: translate(-50%, -50%) scale(1);
+                }
+            }
+            @media (max-width: 600px) {
+                .settings-dialog,
+                .profile-dialog {
+                    width: calc(100vw - 20px);
+                    height: calc(100vh - 24px);
+                    border-radius: 16px;
+                }
+            }
+            @media (prefers-reduced-motion: reduce) {
+                .settings-dialog,
+                .profile-dialog {
+                    animation: none;
+                }
+                .settings-close,
+                .profile-close {
+                    transition: none;
+                }
             }
             h1 {
                 margin: 0;
@@ -419,7 +465,7 @@
                     <path d="M19.4 13a7.8 7.8 0 0 0 0-2l2-1.5-2-3.4-2.4 1a7.7 7.7 0 0 0-1.7-1L15 3.5h-4L10.6 6a7.7 7.7 0 0 0-1.7 1l-2.4-1-2 3.4 2 1.5a7.8 7.8 0 0 0 0 2l-2 1.5 2 3.4 2.4-1a7.7 7.7 0 0 0 1.7 1l.4 2.5h4l.4-2.5a7.7 7.7 0 0 0 1.7-1l2.4 1 2-3.4-2-1.5ZM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z"></path>
                 </svg>
             </button>
-            <button type="button" class="btn profile-button" data-account-url="{{ url_for('admin_account') }}" aria-label="Profile settings" title="Profile">
+            <button type="button" class="btn profile-button" aria-label="Profile settings" title="Profile">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
                 </svg>
@@ -493,18 +539,18 @@
             </div>
             <iframe src="{{ url_for('admin_settings') }}" title="Settings"></iframe>
         </section>
+        <section class="profile-dialog" role="dialog" aria-modal="true" aria-label="Profile" hidden>
+            <div class="settings-dialog-header">
+                <button type="button" class="profile-close" aria-label="Close profile">&times;</button>
+            </div>
+            <iframe src="{{ url_for('admin_account') }}" title="Account"></iframe>
+        </section>
         <script>
-            // Cache the donor form, its controls, and the settings dialog elements used below.
-            const donorForm = document.querySelector('form.donor');
-            const overlay = document.querySelector('.overlay');
-            const openDonorFormButton = document.querySelector('.plus-card');
-            const closeDonorFormButton = donorForm.querySelector('.close');
-            const submitDonorButton = donorForm.querySelector('.submit-donor');
-            const formError = donorForm.querySelector('.form-error');
-            const createDonorUrl = donorForm.action;
-            const messageEditor = donorForm.querySelector('.message-editor');
-            const messageInput = donorForm.elements.message;
+            // Cache the toolbar buttons and their shared overlay/dialog controls.
             const profileButton = document.querySelector('.profile-button');
+            const profileDialog = document.querySelector('.profile-dialog');
+            const profileCloseButton = document.querySelector('.profile-close');
+
             const settingsButton = document.querySelector('.settings-button');
             const settingsOverlay = document.querySelector('.settings-overlay');
             const settingsDialog = document.querySelector('.settings-dialog');
@@ -516,6 +562,12 @@
                 settingsDialog.hidden = true;
                 settingsButton.focus();
             }
+            // Hide the profile dialog and return keyboard focus to the button that opened it.
+            function closeProfile() {
+                settingsOverlay.hidden = true;
+                profileDialog.hidden = true;
+                profileButton.focus();
+            }
 
             // Open settings from the toolbar, and close it with its button, backdrop, or Escape.
             settingsButton.addEventListener('click', () => {
@@ -523,16 +575,43 @@
                 settingsDialog.hidden = false;
                 settingsCloseButton.focus();
             });
-            profileButton.addEventListener('click', () => {
-                window.location.assign(profileButton.dataset.accountUrl);
-            });
             settingsCloseButton.addEventListener('click', closeSettings);
-            settingsOverlay.addEventListener('click', closeSettings);
-            document.addEventListener('keydown', (event) => {
-                if (event.key === 'Escape' && !settingsDialog.hidden) {
+
+            // Open profile from the toolbar, and close it with its button, backdrop, or Escape.
+            profileButton.addEventListener('click', () => {
+                settingsOverlay.hidden = false;
+                profileDialog.hidden = false;
+                profileCloseButton.focus();
+            });
+            profileCloseButton.addEventListener('click', closeProfile);
+            settingsOverlay.addEventListener('click', () => {
+                if (!profileDialog.hidden) {
+                    closeProfile();
+                } else {
                     closeSettings();
                 }
             });
+
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape') {
+                    if (!profileDialog.hidden) {
+                        closeProfile();
+                    } else if (!settingsDialog.hidden) {
+                        closeSettings();
+                    }
+                }
+            });
+        </script>
+        <script>
+            const donorForm = document.querySelector('form.donor');
+            const overlay = document.querySelector('.overlay');
+            const openDonorFormButton = document.querySelector('.plus-card');
+            const closeDonorFormButton = donorForm.querySelector('.close');
+            const submitDonorButton = donorForm.querySelector('.submit-donor');
+            const formError = donorForm.querySelector('.form-error');
+            const createDonorUrl = donorForm.action;
+            const messageEditor = donorForm.querySelector('.message-editor');
+            const messageInput = donorForm.elements.message;
 
             // Keep toolbar clicks from stealing the editor selection, then apply formatting there.
             donorForm.querySelectorAll('.message-toolbar [data-command]').forEach((button) => {
