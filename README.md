@@ -7,9 +7,12 @@ Includes admin dashboard for easy managing of displayed names and information.
 
 The admin settings panel saves display preferences and account credentials to
 `settings.json` in the project directory (or the path specified by
-`SETTINGS_PATH`). Display preferences are stored for future use and are not yet
-applied to the public display page. Passwords are stored as Werkzeug password
-hashes, not as plain text; `settings.json` is excluded from version control.
+`SETTINGS_PATH`). Public display settings include the slideshow font, duration
+per frame, transition effect, and an optional text frame shown before the donor
+entries. The public display checks for donor database changes at the configured
+refresh interval and updates its slideshow without a page reload. Passwords are
+stored as Werkzeug password hashes, not as plain text; `settings.json` is
+excluded from version control.
 
 Changing the admin username or password requires the current password. New
 passwords must be at least 8 characters. If no settings file exists, the
