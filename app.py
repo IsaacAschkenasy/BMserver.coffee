@@ -28,6 +28,10 @@ def default_settings():
         "background_color": "#f4f4f4",
         "background_opacity": 0.9,
         "refresh_interval": 30,
+        "font": "David Libre",
+        "time_per_frame": 10,
+        "effect": "fading",
+        "start_frame": "",
         "admin_username": os.environ.get("ADMIN_USER", "admin"),
         "admin_password_hash": generate_password_hash(
             os.environ.get("ADMIN_PASS", "ChangeMe123!")
@@ -42,6 +46,10 @@ def validate_settings(settings):
         "background_color": str,
         "background_opacity": (int, float),
         "refresh_interval": int,
+        "font": str,
+        "time_per_frame": int,
+        "effect": str,
+        "start_frame": str,
         "admin_username": str,
         "admin_password_hash": str,
     }
@@ -62,6 +70,17 @@ def validate_settings(settings):
         or not 1 <= settings["refresh_interval"] <= 3600
     ):
         raise ValueError("Refresh interval must be between 1 and 3600 seconds.")
+    if settings["font"] not in {"David Libre", "Arial", "Georgia"}:
+        raise ValueError("Font must be David Libre, Arial, or Georgia.")
+    if (
+        isinstance(settings["time_per_frame"], bool)
+        or not 1 <= settings["time_per_frame"] <= 3600
+    ):
+        raise ValueError("Time per frame must be between 1 and 3600 seconds.")
+    if settings["effect"] not in {"none", "sliding", "fading"}:
+        raise ValueError("Effect must be none, sliding, or fading.")
+    if len(settings["start_frame"]) > 500:
+        raise ValueError("Start frame may not exceed 500 characters.")
     if not settings["admin_username"].strip() or not settings["admin_password_hash"]:
         raise ValueError("Admin username and password hash cannot be empty.")
     return settings
@@ -111,9 +130,17 @@ def public_settings():
             "background_color",
             "background_opacity",
             "refresh_interval",
+            "font",
+            "time_per_frame",
+            "effect",
+            "start_frame",
             "admin_username",
         )
     }
+
+###############################################
+# Server handling
+###############################################
 
 settings = load_settings()
 ADMIN_USERNAME = settings["admin_username"]
@@ -223,12 +250,18 @@ def get_donors():
 # Public Route: Renders display layout
 @app.route('/')
 def display():
-    return render_template('display.html')
+    return render_template(
+        'display.html',
+        donors=get_donors(),
+        settings=public_settings(),
+    )
 
-# JSON API Route: Allows display.html to fetch the updated message continuously
+# JSON API Route: Allows the public display to refresh donor entries.
 @app.route('/api/data')
 def get_display_data():
-    return "diplay_data!!!!!!!!!"
+    response = jsonify({"donors": get_donors()})
+    response.headers["Cache-Control"] = "no-store"
+    return response
 
 @app.route('/login')
 def login():
@@ -273,6 +306,10 @@ def save_admin_settings():
     background_color = data.get("background_color")
     background_opacity = data.get("background_opacity")
     refresh_interval = data.get("refresh_interval")
+    font = data.get("font")
+    time_per_frame = data.get("time_per_frame")
+    effect = data.get("effect")
+    start_frame = data.get("start_frame")
     if not isinstance(display_title, str):
         return jsonify({"success": False, "error": "Display title is required."}), 400
     if not isinstance(background_color, str):
@@ -289,6 +326,18 @@ def save_admin_settings():
         or not 1 <= refresh_interval <= 3600
     ):
         return jsonify({"success": False, "error": "Refresh interval must be 1–3600 seconds."}), 400
+    if not isinstance(font, str) or font not in {"David Libre", "Arial", "Georgia"}:
+        return jsonify({"success": False, "error": "Choose a valid font."}), 400
+    if (
+        isinstance(time_per_frame, bool)
+        or not isinstance(time_per_frame, int)
+        or not 1 <= time_per_frame <= 3600
+    ):
+        return jsonify({"success": False, "error": "Time per frame must be 1–3600 seconds."}), 400
+    if not isinstance(effect, str) or effect not in {"none", "sliding", "fading"}:
+        return jsonify({"success": False, "error": "Choose a valid slideshow effect."}), 400
+    if not isinstance(start_frame, str) or len(start_frame) > 500:
+        return jsonify({"success": False, "error": "Start frame must be text of at most 500 characters."}), 400
 
     display_title = display_title.strip()
     if not display_title or len(display_title) > 100:
@@ -302,6 +351,10 @@ def save_admin_settings():
         "background_color": background_color.lower(),
         "background_opacity": float(background_opacity),
         "refresh_interval": refresh_interval,
+        "font": font,
+        "time_per_frame": time_per_frame,
+        "effect": effect,
+        "start_frame": start_frame.strip(),
     }
     try:
         save_settings(updated_settings)
@@ -381,7 +434,7 @@ def create_donor():
 
     return jsonify({"success": True}), 201
 
-@app.route('/admin/donors/<int:donor_id>/update', methods=['POST'])
+@app.route('/admin/donors/<int:donor_id>', methods=['POST'])
 def update_donor(donor_id):
     if not session.get('logged_in'):
         return jsonify({"success": False, "error": "Unauthorized"}), 401
@@ -410,7 +463,7 @@ def update_donor(donor_id):
 
     return jsonify({"success": True})
 
-@app.route('/admin/donors/<int:donor_id>/delete', methods=['POST'])
+@app.route('/admin/donors/<int:donor_id>', methods=['DELETE'])
 def delete_donor(donor_id):
     if not session.get('logged_in'):
         return jsonify({"success": False, "error": "Unauthorized"}), 401

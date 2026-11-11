@@ -39,10 +39,8 @@
                 border-radius: 20px;
                 box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
             }
-            .settings-button {
+            .btn {
                 position: absolute;
-                top: 18px;
-                right: 18px;
                 width: 42px;
                 height: 42px;
                 display: inline-flex;
@@ -54,10 +52,18 @@
                 color: #613604;
                 cursor: pointer;
             }
-            .settings-button:hover {
+            .settings-button {
+                top: 18px;
+                right: 70px; 
+            }
+            .profile-button {
+                top: 18px;
+                right: 18px;
+            }
+            .btn:hover {
                 background: rgba(97, 54, 4, 0.22);
             }
-            .settings-button svg {
+            .btn svg {
                 width: 24px;
                 height: 24px;
                 fill: currentColor;
@@ -408,9 +414,14 @@
     </head>
     <body>
         <div class="content">
-            <button type="button" class="settings-button" aria-label="Open settings" title="Settings">
+            <button type="button" class="btn settings-button" aria-label="Open settings" title="Settings">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M19.4 13a7.8 7.8 0 0 0 0-2l2-1.5-2-3.4-2.4 1a7.7 7.7 0 0 0-1.7-1L15 3.5h-4L10.6 6a7.7 7.7 0 0 0-1.7 1l-2.4-1-2 3.4 2 1.5a7.8 7.8 0 0 0 0 2l-2 1.5 2 3.4 2.4-1a7.7 7.7 0 0 0 1.7 1l.4 2.5h4l.4-2.5a7.7 7.7 0 0 0 1.7-1l2.4 1 2-3.4-2-1.5ZM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z"></path>
+                </svg>
+            </button>
+            <button type="button" class="btn profile-button" aria-label="Change password" title="Profile">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
                 </svg>
             </button>
             <h1>Coffee Admin</h1>
@@ -483,6 +494,7 @@
             <iframe src="{{ url_for('admin_settings') }}" title="Settings"></iframe>
         </section>
         <script>
+            // Cache the donor form, its controls, and the settings dialog elements used below.
             const donorForm = document.querySelector('form.donor');
             const overlay = document.querySelector('.overlay');
             const openDonorFormButton = document.querySelector('.plus-card');
@@ -492,17 +504,20 @@
             const createDonorUrl = donorForm.action;
             const messageEditor = donorForm.querySelector('.message-editor');
             const messageInput = donorForm.elements.message;
+            const profileButton = document.querySelector('.profile-button');
             const settingsButton = document.querySelector('.settings-button');
             const settingsOverlay = document.querySelector('.settings-overlay');
             const settingsDialog = document.querySelector('.settings-dialog');
             const settingsCloseButton = document.querySelector('.settings-close');
 
+            // Hide the settings dialog and return keyboard focus to the button that opened it.
             function closeSettings() {
                 settingsOverlay.hidden = true;
                 settingsDialog.hidden = true;
                 settingsButton.focus();
             }
 
+            // Open settings from the toolbar, and close it with its button, backdrop, or Escape.
             settingsButton.addEventListener('click', () => {
                 settingsOverlay.hidden = false;
                 settingsDialog.hidden = false;
@@ -516,6 +531,7 @@
                 }
             });
 
+            // Keep toolbar clicks from stealing the editor selection, then apply formatting there.
             donorForm.querySelectorAll('.message-toolbar [data-command]').forEach((button) => {
                 button.addEventListener('mousedown', (event) => event.preventDefault());
                 button.addEventListener('click', () => {
@@ -524,6 +540,7 @@
                 });
             });
 
+            // Display the donor dialog and focus its first field.
             function showDonorForm() {
                 donorForm.hidden = false;
                 overlay.hidden = false;
@@ -531,6 +548,7 @@
                 donorForm.elements.type.focus();
             }
 
+            // Reset the form and prepare it to create a new donor.
             function prepareNewDonor() {
                 donorForm.reset();
                 messageEditor.innerHTML = '';
@@ -540,12 +558,14 @@
                 showDonorForm();
             }
 
+            // Hide the donor dialog and return focus to its open button.
             function closeDonorForm() {
                 donorForm.hidden = true;
                 overlay.hidden = true;
                 openDonorFormButton.focus();
             }
 
+            // Configure the donor dialog for creating or editing the selected donor.
             openDonorFormButton.addEventListener('click', prepareNewDonor);
             document.querySelectorAll('.edit-donor').forEach((button) => {
                 button.addEventListener('click', () => {
@@ -559,6 +579,8 @@
                     showDonorForm();
                 });
             });
+
+            // Confirm deletion, send the request, and reload on success; report errors in an alert.
             document.querySelectorAll('.delete-donor').forEach((button) => {
                 button.addEventListener('click', async () => {
                     if (!window.confirm('Are you sure you want to delete this donor?')) {
@@ -568,7 +590,7 @@
                     button.disabled = true;
                     try {
                         const response = await fetch(button.dataset.deleteUrl, {
-                            method: 'POST',
+                            method: 'DELETE',
                             headers: { Accept: 'application/json' },
                         });
                         const result = await response.json();
@@ -582,6 +604,8 @@
                     }
                 });
             });
+
+            // Close the donor dialog with its button, backdrop, or Escape.
             closeDonorFormButton.addEventListener('click', closeDonorForm);
             overlay.addEventListener('click', closeDonorForm);
             document.addEventListener('keydown', (event) => {
@@ -590,6 +614,7 @@
                 }
             });
 
+            // Validate and submit donor details, then reload the list or show the request error.
             donorForm.addEventListener('submit', async (event) => {
                 event.preventDefault();
                 messageInput.value = messageEditor.innerHTML;
