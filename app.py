@@ -134,7 +134,6 @@ def public_settings():
             "time_per_frame",
             "effect",
             "start_frame",
-            "admin_username",
         )
     }
 
@@ -291,6 +290,12 @@ def admin_settings():
     if not session.get('logged_in'):
         return redirect(url_for('login'))
     return render_template('settings.html', settings=public_settings())
+
+@app.route('/admin/account')
+def admin_account():
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+    return render_template('account.html', admin_username=ADMIN_USERNAME)
 
 @app.route('/admin/settings/save', methods=['POST'])
 def save_admin_settings():

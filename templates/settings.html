@@ -111,49 +111,6 @@
             #save-status.error {
                 color: #a00000;
             }
-            .account-open {
-                min-height: 42px;
-                margin-bottom: 18px;
-                padding: 8px 14px;
-                border: 1px solid #8b5e34;
-                border-radius: 7px;
-                background: rgba(255, 255, 255, 0.55);
-                color: #613604;
-                font: inherit;
-                font-weight: 600;
-                cursor: pointer;
-            }
-            .account-dialog {
-                width: min(560px, calc(100vw - 32px));
-                max-height: calc(100vh - 32px);
-                padding: 22px;
-                border: 1px solid rgba(97, 54, 4, 0.35);
-                border-radius: 14px;
-                background: #efe2cf;
-                color: #613604;
-                box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
-            }
-            .account-dialog::backdrop {
-                background: rgba(0, 0, 0, 0.55);
-            }
-            .account-dialog h2 {
-                margin: 0 0 14px;
-            }
-            .dialog-actions {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-            }
-            .dialog-actions button[type="button"] {
-                min-height: 44px;
-                padding: 8px 16px;
-                border: 1px solid #8b5e34;
-                border-radius: 7px;
-                background: transparent;
-                color: #613604;
-                font: inherit;
-                cursor: pointer;
-            }
             @media (max-width: 480px) {
                 body {
                     padding: 16px;
@@ -215,42 +172,14 @@
                         <p class="hint">Shown once before the donor entries. Leave blank to skip it.</p>
                     </div>
                 </fieldset>
-                <button type="button" class="account-open">Change username or password</button>
                 <div class="save-row">
                     <button type="submit">Save settings</button>
                     <p id="save-status" role="status" aria-live="polite"></p>
                 </div>
             </form>
-            <dialog class="account-dialog" aria-labelledby="account-dialog-title">
-                <h2 id="account-dialog-title">Administrator account</h2>
-                <form id="account-form" action="{{ url_for('save_admin_account') }}">
-                    <div class="field">
-                        <label for="admin-username">Username</label>
-                        <input id="admin-username" name="admin_username" type="text" value="{{ settings['admin_username'] }}" autocomplete="username" required maxlength="100">
-                    </div>
-                    <div class="field">
-                        <label for="current-password">Current password</label>
-                        <input id="current-password" name="current_password" type="password" autocomplete="current-password" required>
-                    </div>
-                    <div class="field">
-                        <label for="new-password">New password</label>
-                        <input id="new-password" name="new_password" type="password" autocomplete="new-password" minlength="8">
-                        <p class="hint">Leave blank to keep the current password. Use at least 8 characters to change it.</p>
-                    </div>
-                    <div class="field">
-                        <label for="confirm-password">Confirm new password</label>
-                        <input id="confirm-password" name="confirm_password" type="password" autocomplete="new-password" minlength="8">
-                    </div>
-                    <div class="dialog-actions">
-                        <button type="submit">Save account</button>
-                        <button type="button" class="account-cancel">Cancel</button>
-                        <p id="account-status" role="status" aria-live="polite"></p>
-                    </div>
-                </form>
-            </dialog>
         </main>
         <script>
-            // Cache the settings form, status displays, and account dialog controls.
+            // Cache the settings form and status display.
             const form = document.querySelector('#settings-form');
             const status = document.querySelector('#save-status');
             const saveButton = form.querySelector('button[type="submit"]');
@@ -258,10 +187,6 @@
             const colorValue = document.querySelector('#background-color-value');
             const opacityInput = form.elements.background_opacity;
             const opacityValue = document.querySelector('#opacity-value');
-            const accountDialog = document.querySelector('.account-dialog');
-            const accountForm = document.querySelector('#account-form');
-            const accountStatus = document.querySelector('#account-status');
-            const accountSaveButton = accountForm.querySelector('button[type="submit"]');
 
             // Keep the displayed color and opacity values in sync with their input controls.
             colorInput.addEventListener('input', () => {
@@ -312,63 +237,6 @@
                 }
             });
 
-            // Open the account dialog with a clean status and focus the current-password field.
-            document.querySelector('.account-open').addEventListener('click', () => {
-                accountStatus.textContent = '';
-                accountStatus.classList.remove('error');
-                accountDialog.showModal();
-                accountForm.elements.current_password.focus();
-            });
-
-            // Close the account dialog without submitting the form.
-            document.querySelector('.account-cancel').addEventListener('click', () => {
-                accountDialog.close();
-            });
-
-            // Check that the new passwords match, save account changes, and report the result.
-            accountForm.addEventListener('submit', async (event) => {
-                event.preventDefault();
-                accountStatus.textContent = '';
-                accountStatus.classList.remove('error');
-
-                const newPassword = accountForm.elements.new_password.value;
-                if (newPassword !== accountForm.elements.confirm_password.value) {
-                    accountStatus.textContent = 'New passwords do not match.';
-                    accountStatus.classList.add('error');
-                    return;
-                }
-
-                accountSaveButton.disabled = true;
-                accountStatus.textContent = 'Saving…';
-                try {
-                    const response = await fetch(accountForm.action, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            admin_username: accountForm.elements.admin_username.value,
-                            current_password: accountForm.elements.current_password.value,
-                            new_password: newPassword,
-                        }),
-                    });
-                    const result = await response.json();
-                    if (!response.ok || result.success !== true) {
-                        throw new Error(result.error || 'Could not save account settings.');
-                    }
-                    accountForm.elements.admin_username.value = result.admin_username;
-                    accountForm.elements.current_password.value = '';
-                    accountForm.elements.new_password.value = '';
-                    accountForm.elements.confirm_password.value = '';
-                    accountStatus.textContent = 'Account settings saved.';
-                } catch (error) {
-                    accountStatus.textContent = error.message || 'Could not save account settings.';
-                    accountStatus.classList.add('error');
-                } finally {
-                    accountSaveButton.disabled = false;
-                }
-            });
         </script>
     </body>
 </html>

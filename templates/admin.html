@@ -419,7 +419,7 @@
                     <path d="M19.4 13a7.8 7.8 0 0 0 0-2l2-1.5-2-3.4-2.4 1a7.7 7.7 0 0 0-1.7-1L15 3.5h-4L10.6 6a7.7 7.7 0 0 0-1.7 1l-2.4-1-2 3.4 2 1.5a7.8 7.8 0 0 0 0 2l-2 1.5 2 3.4 2.4-1a7.7 7.7 0 0 0 1.7 1l.4 2.5h4l.4-2.5a7.7 7.7 0 0 0 1.7-1l2.4 1 2-3.4-2-1.5ZM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z"></path>
                 </svg>
             </button>
-            <button type="button" class="btn profile-button" aria-label="Change password" title="Profile">
+            <button type="button" class="btn profile-button" data-account-url="{{ url_for('admin_account') }}" aria-label="Profile settings" title="Profile">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
                 </svg>
@@ -522,6 +522,9 @@
                 settingsOverlay.hidden = false;
                 settingsDialog.hidden = false;
                 settingsCloseButton.focus();
+            });
+            profileButton.addEventListener('click', () => {
+                window.location.assign(profileButton.dataset.accountUrl);
             });
             settingsCloseButton.addEventListener('click', closeSettings);
             settingsOverlay.addEventListener('click', closeSettings);
