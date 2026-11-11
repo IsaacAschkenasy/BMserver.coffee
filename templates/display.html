@@ -1,3 +1,4 @@
+<!doctype html>
 <html lang="he">
     <head>
         <title>מעיני הישועה</title>
@@ -8,21 +9,220 @@
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=David+Libre:wght@400;500;700&display=swap" rel="stylesheet">
         <style>
+            * {
+                box-sizing: border-box;
+            }
             body {
-                font-family: 'David Libre', serif;
+                font-family: {{ settings['font']|tojson }}, serif;
                 margin: 0;
                 padding: 0;
-                background-color: #fcd7d9;
+                background-color: #d4c189;
             }
             main {
-                margin-right: 270px; /* Adjust for sidebar width + padding */
-                padding: 20px;
+                width: 100%;
+                height: 100vh;
+                overflow: hidden;
+            }
+            .donor-container {
+                position: fixed;
+                inset: 25vh 0vw 13vh;
+                overflow: hidden;
+                text-align: center;
+            }
+            .donor-slideshow {
+                position: relative;
+                width: 100%;
+                height: 100%;
+            }
+            .slide {
+                position: absolute;
+                inset: 0;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                gap: 1.5vh;
+                padding: 2vh 2vw;
+                color: #613604;
+                background-color: rgba(255, 255, 255, 0.8);
+                font-size: clamp(2.5rem, 5vw, 5rem);
+                line-height: 1.2;
+                opacity: 0;
+                transform: translateX(100%);
+                transition: opacity 700ms ease, transform 700ms ease;
+                pointer-events: none;
+            }
+            .slide.is-active {
+                opacity: 1;
+                transform: translateX(0);
+            }
+            .slide.is-exiting {
+                opacity: 0;
+                transform: translateX(-100%);
+            }
+            .effect-none .slide {
+                transition: none;
+            }
+            .effect-fading .slide {
+                transform: none;
+            }
+            .effect-fading .slide.is-exiting {
+                transform: none;
+            }
+            .effect-none .slide.is-exiting {
+                transform: none;
+            }
+            .donor-type {
+                font-size: 1.0em;
+                font-weight: 500;
+            }
+            .donor-name {
+                font-size: 1.2em;
+                font-weight: 700;
+                color: #8c1d23;
+            }
+            .donor-message {
+                max-width: 100%;
+                font-size: 0.9em;
+                overflow-wrap: anywhere;
+            }
+            .donor-message p {
+                margin: 0.65em 0;
+            }
+            .donor-message ul {
+                display: inline-block;
+                margin: 0.65em 0;
+                text-align: start;
+            }
+            .start-frame {
+                white-space: pre-wrap;
+                font-weight: 700;
+            }
+            @media (prefers-reduced-motion: reduce) {
+                .slide {
+                    transition: none;
+                }
             }
         </style>
     </head>
     <body>
         <main>
-            
+            <img src="{{ url_for('static', filename='lehashkot_header.png') }}" alt="Lehashkot Header" style="width: 100%; height: auto;">
+            <div class="donor-container">
+                <div class="donor-slideshow effect-{{ settings['effect'] }}" data-interval="{{ settings['time_per_frame'] }}" data-refresh-interval="{{ settings['refresh_interval'] }}">
+                    {% if settings['start_frame'] %}
+                        <section class="slide start-frame">{{ settings['start_frame'] }}</section>
+                    {% endif %}
+                    {% for donor in donors %}
+                        <section class="slide" data-donor-id="{{ donor['id'] }}">
+                            <div class="donor-type">{{ donor['type'] }}</div>
+                            <div class="donor-name">{{ donor['donor_name'] }}</div>
+                            <div class="donor-message">{{ donor['message'] }}</div>
+                        </section>
+                    {% endfor %}
+                </div>
+            </div>
+            <img src="{{ url_for('static', filename='lehashkot_footer.png') }}" alt="Lehashkot Footer" style="width: 100%; height: auto; position:fixed; bottom:0; left:0;">
         </main>
+        <script>
+                const slideshow = document.querySelector('.donor-slideshow');
+                const startFrame = {{ settings['start_frame']|tojson }};
+                let donors = {{ donors|tojson }};
+                let slides = Array.from(slideshow.children);
+                let activeIndex = slides.findIndex((slide) => slide.classList.contains('is-active'));
+                if (activeIndex < 0 && slides.length) {
+                    activeIndex = 0;
+                    slides[activeIndex].classList.add('is-active');
+                }
+
+                function renderSlides() {
+                    const activeSlide = slides[activeIndex];
+                    const activeDonorId = activeSlide?.dataset.donorId;
+                    const wasStartFrame = activeSlide?.classList.contains('start-frame') ?? false;
+                    const nextSlides = [];
+
+                    if (startFrame) {
+                        const intro = document.createElement('section');
+                        intro.className = 'slide start-frame';
+                        intro.textContent = startFrame;
+                        nextSlides.push(intro);
+                    }
+
+                    donors.forEach((donor) => {
+                        const slide = document.createElement('section');
+                        slide.className = 'slide';
+                        slide.dataset.donorId = donor.id;
+
+                        const type = document.createElement('div');
+                        type.className = 'donor-type';
+                        type.textContent = donor.type;
+
+                        const name = document.createElement('div');
+                        name.className = 'donor-name';
+                        name.textContent = donor.donor_name;
+
+                        const message = document.createElement('div');
+                        message.className = 'donor-message';
+                        message.innerHTML = donor.message;
+
+                        slide.append(type, name, message);
+                        nextSlides.push(slide);
+                    });
+
+                    let nextActiveIndex = nextSlides.findIndex((slide) =>
+                        wasStartFrame
+                            ? slide.classList.contains('start-frame')
+                            : activeDonorId && slide.dataset.donorId === activeDonorId
+                    );
+                    if (nextActiveIndex < 0 && nextSlides.length) {
+                        nextActiveIndex = Math.min(Math.max(activeIndex, 0), nextSlides.length - 1);
+                    }
+                    slides = nextSlides;
+                    activeIndex = nextActiveIndex;
+                    slideshow.replaceChildren(...slides);
+                    if (activeIndex >= 0) {
+                        slides[activeIndex].classList.add('is-active');
+                    }
+                }
+
+                let donorSnapshot = JSON.stringify(donors);
+                async function refreshDonors() {
+                    try {
+                        const response = await fetch('{{ url_for("get_display_data") }}', { cache: 'no-store' });
+                        if (!response.ok) {
+                            throw new Error(`Donor refresh failed: ${response.status}`);
+                        }
+                        const result = await response.json();
+                        if (!Array.isArray(result.donors)) {
+                            throw new Error('Donor refresh returned an invalid response.');
+                        }
+                        const nextSnapshot = JSON.stringify(result.donors);
+                        if (nextSnapshot !== donorSnapshot) {
+                            donors = result.donors;
+                            donorSnapshot = nextSnapshot;
+                            renderSlides();
+                        }
+                    } catch (error) {
+                        console.error('Could not refresh donor entries.', error);
+                    }
+                }
+
+                window.setInterval(() => {
+                    if (slides.length > 1) {
+                        const previousSlide = slides[activeIndex];
+                        activeIndex = (activeIndex + 1) % slides.length;
+                        const nextSlide = slides[activeIndex];
+                        previousSlide.classList.remove('is-active');
+                        previousSlide.classList.add('is-exiting');
+                        nextSlide.classList.remove('is-exiting');
+                        nextSlide.classList.add('is-active');
+                        window.setTimeout(() => {
+                            previousSlide.classList.remove('is-exiting');
+                        }, 750);
+                    }
+                }, Number(slideshow.dataset.interval) * 1000);
+
+                window.setInterval(refreshDonors, Number(slideshow.dataset.refreshInterval) * 1000);
+        </script>
     </body>
 </html>
