@@ -12,3 +12,5 @@ EXPOSE 5000
 # Setup an app user so the container doesn't run as the root user
 RUN useradd app
 USER app
+
+CMD ["gunicorn", "-c", "gunicorn.conf.py", "app:app"]
