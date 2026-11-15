@@ -133,12 +133,16 @@
                 </div>
                 <div class="field">
                     <label for="new-password">New password</label>
-                    <input id="new-password" name="new_password" type="password" autocomplete="new-password" minlength="8">
-                    <p class="hint">Leave blank to keep the current password. Use at least 8 characters to change it.</p>
+                    <input id="new-password" name="new_password" type="password" autocomplete="new-password" minlength="10" maxlength="1024" {% if password_change_required %}required{% endif %}>
+                    {% if password_change_required %}
+                    <p class="hint">You must change your password before continuing. Use at least 10 characters, including an uppercase letter, a lowercase letter, a digit, and a special character.</p>
+                    {% else %}
+                    <p class="hint">Leave blank to keep the current password. New passwords need at least 10 characters, including an uppercase letter, a lowercase letter, a digit, and a special character.</p>
+                    {% endif %}
                 </div>
                 <div class="field">
                     <label for="confirm-password">Confirm new password</label>
-                    <input id="confirm-password" name="confirm_password" type="password" autocomplete="new-password" minlength="8">
+                    <input id="confirm-password" name="confirm_password" type="password" autocomplete="new-password" minlength="10" maxlength="1024" {% if password_change_required %}required{% endif %}>
                 </div>
                 <div class="actions">
                     <button type="submit">Save account</button>
@@ -150,6 +154,8 @@
             const accountForm = document.querySelector('#account-form');
             const accountStatus = document.querySelector('#account-status');
             const accountSaveButton = accountForm.querySelector('button[type="submit"]');
+            const passwordChangeRequired = {{ password_change_required | tojson }};
+            const adminUrl = {{ url_for('admin') | tojson }};
 
             accountForm.addEventListener('submit', async (event) => {
                 event.preventDefault();
@@ -186,6 +192,10 @@
                     accountForm.elements.current_password.value = '';
                     accountForm.elements.new_password.value = '';
                     accountForm.elements.confirm_password.value = '';
+                    if (passwordChangeRequired) {
+                        window.location.assign(adminUrl);
+                        return;
+                    }
                     accountStatus.textContent = 'Account settings saved.';
                 } catch (error) {
                     accountStatus.textContent = error.message || 'Could not save account settings.';

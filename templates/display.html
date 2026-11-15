@@ -1,10 +1,11 @@
 <!doctype html>
-<html lang="he">
+<html lang="he" translate="no">
     <head>
         <title>מעיני הישועה</title>
         <link rel="icon" href="{{ url_for('static', filename='coffee_icon.png') }}" type="image/png">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <meta charset="UTF-8">
+        <meta name="google" content="notranslate">
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=David+Libre:wght@400;500;700&display=swap" rel="stylesheet">
@@ -49,7 +50,7 @@
                 line-height: 1.2;
                 opacity: 0;
                 transform: translateX(100%);
-                transition: opacity 700ms ease, transform 700ms ease;
+                transition: opacity 1200ms ease, transform 700ms ease;
                 pointer-events: none;
             }
             .slide.is-active {
@@ -65,6 +66,7 @@
             }
             .effect-fading .slide {
                 transform: none;
+                transition: opacity 2000ms cubic-bezier(0.4, 0, 0.2, 1);
             }
             .effect-fading .slide.is-exiting {
                 transform: none;
@@ -98,6 +100,17 @@
                 white-space: pre-wrap;
                 font-weight: 700;
             }
+            .database-status {
+                position: fixed;
+                z-index: 2;
+                left: 12px;
+                bottom: 75px;
+                padding: 6px 10px;
+                border-radius: 4px;
+                background: rgba(120, 0, 0, 0.9);
+                color: white;
+                font: 14px/1.2 Arial, sans-serif;
+            }
             @media (prefers-reduced-motion: reduce) {
                 .slide {
                     transition: none;
@@ -109,7 +122,7 @@
         <main>
             <img src="{{ url_for('static', filename='lehashkot_header.png') }}" alt="Lehashkot Header" style="width: 100%; height: auto;">
             <div class="donor-container">
-                <div class="donor-slideshow effect-{{ settings['effect'] }}" data-interval="{{ settings['time_per_frame'] }}" data-refresh-interval="{{ settings['refresh_interval'] }}">
+                <div class="donor-slideshow effect-{{ settings['effect'] }}" data-interval="{{ settings['time_per_frame'] }}">
                     {% if settings['start_frame'] %}
                         <section class="slide start-frame">{{ settings['start_frame'] }}</section>
                     {% endif %}
@@ -124,10 +137,13 @@
             </div>
             <img src="{{ url_for('static', filename='lehashkot_footer.png') }}" alt="Lehashkot Footer" style="width: 100%; height: auto; position:fixed; bottom:0; left:0;">
         </main>
+        <div class="database-status" role="status" {% if database_connected %}hidden{% endif %}>no connection to database</div>
         <script>
                 const slideshow = document.querySelector('.donor-slideshow');
                 const startFrame = {{ settings['start_frame']|tojson }};
                 let donors = {{ donors|tojson }};
+                let donorSnapshot = JSON.stringify(donors);
+                const databaseStatus = document.querySelector('.database-status');
                 let slides = Array.from(slideshow.children);
                 let activeIndex = slides.findIndex((slide) => slide.classList.contains('is-active'));
                 if (activeIndex < 0 && slides.length) {
@@ -185,7 +201,6 @@
                     }
                 }
 
-                let donorSnapshot = JSON.stringify(donors);
                 async function refreshDonors() {
                     try {
                         const response = await fetch('{{ url_for("get_display_data") }}', { cache: 'no-store' });
@@ -193,36 +208,43 @@
                             throw new Error(`Donor refresh failed: ${response.status}`);
                         }
                         const result = await response.json();
-                        if (!Array.isArray(result.donors)) {
+                        if (typeof result.connected !== 'boolean' || !Array.isArray(result.donors)) {
                             throw new Error('Donor refresh returned an invalid response.');
                         }
-                        const nextSnapshot = JSON.stringify(result.donors);
-                        if (nextSnapshot !== donorSnapshot) {
-                            donors = result.donors;
-                            donorSnapshot = nextSnapshot;
-                            renderSlides();
+
+                        databaseStatus.hidden = result.connected;
+                        if (result.connected) {
+                            const nextSnapshot = JSON.stringify(result.donors);
+                            if (nextSnapshot !== donorSnapshot) {
+                                donors = result.donors;
+                                donorSnapshot = nextSnapshot;
+                                renderSlides();
+                            }
                         }
                     } catch (error) {
+                        databaseStatus.hidden = false;
                         console.error('Could not refresh donor entries.', error);
                     }
                 }
 
-                window.setInterval(() => {
-                    if (slides.length > 1) {
-                        const previousSlide = slides[activeIndex];
-                        activeIndex = (activeIndex + 1) % slides.length;
-                        const nextSlide = slides[activeIndex];
-                        previousSlide.classList.remove('is-active');
-                        previousSlide.classList.add('is-exiting');
-                        nextSlide.classList.remove('is-exiting');
-                        nextSlide.classList.add('is-active');
-                        window.setTimeout(() => {
-                            previousSlide.classList.remove('is-exiting');
-                        }, 750);
-                    }
-                }, Number(slideshow.dataset.interval) * 1000);
+                window.setInterval(refreshDonors, 5000);
 
-                window.setInterval(refreshDonors, Number(slideshow.dataset.refreshInterval) * 1000);
+                window.setInterval(() => {
+                    if (!slides.length) {
+                        return;
+                    }
+
+                    const previousSlide = slides[activeIndex];
+                    activeIndex = (activeIndex + 1) % slides.length;
+                    const nextSlide = slides[activeIndex];
+                    previousSlide.classList.remove('is-active');
+                    previousSlide.classList.add('is-exiting');
+                    nextSlide.classList.remove('is-exiting');
+                    nextSlide.classList.add('is-active');
+                    window.setTimeout(() => {
+                        previousSlide.classList.remove('is-exiting');
+                    }, 2100);
+                }, Number(slideshow.dataset.interval) * 1000);
         </script>
     </body>
 </html>

@@ -15,7 +15,10 @@ stored as Werkzeug password hashes, not as plain text; `settings.json` is
 excluded from version control. Account credentials are managed separately from
 display preferences using the profile button on the admin page.
 
-Changing the admin username or password requires the current password. New
-passwords must be at least 8 characters. If no settings file exists, the
-`ADMIN_USER` and `ADMIN_PASS` environment variables (or the development
-defaults) are used to initialize account settings.
+Changing the admin username or password requires the current password. The
+administrator must change the initial password after the first login. New
+passwords must be at least 10 characters and include an uppercase letter, a
+lowercase letter, a digit, and a special character. If no settings file exists,
+the `ADMIN_USER` and `ADMIN_PASS` environment variables (or the development
+defaults) are used to initialize account settings. Existing settings files
+without a password-change status require a password change at the next login.

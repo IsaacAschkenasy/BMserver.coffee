@@ -25,9 +25,6 @@ SETTINGS_PATH = os.environ.get(
 def default_settings():
     return {
         "display_title": "Coffee Display",
-        "background_color": "#f4f4f4",
-        "background_opacity": 0.9,
-        "refresh_interval": 30,
         "font": "David Libre",
         "time_per_frame": 10,
         "effect": "fading",
@@ -36,6 +33,7 @@ def default_settings():
         "admin_password_hash": generate_password_hash(
             os.environ.get("ADMIN_PASS", "admin")
         ),
+        "admin_password_change_required": True,
     }
 
 def validate_settings(settings):
@@ -43,33 +41,19 @@ def validate_settings(settings):
         raise ValueError("Settings file must contain a JSON object.")
     required = {
         "display_title": str,
-        "background_color": str,
-        "background_opacity": (int, float),
-        "refresh_interval": int,
         "font": str,
         "time_per_frame": int,
         "effect": str,
         "start_frame": str,
         "admin_username": str,
         "admin_password_hash": str,
+        "admin_password_change_required": bool,
     }
     for key, expected_type in required.items():
         if not isinstance(settings.get(key), expected_type):
             raise ValueError(f"Invalid setting: {key}")
     if not settings["display_title"].strip():
         raise ValueError("Display title cannot be empty.")
-    if not re.fullmatch(r"#[0-9a-fA-F]{6}", settings["background_color"]):
-        raise ValueError("Background color must be a six-digit hex color.")
-    if (
-        isinstance(settings["background_opacity"], bool)
-        or not 0 <= settings["background_opacity"] <= 1
-    ):
-        raise ValueError("Background opacity must be between 0 and 1.")
-    if (
-        isinstance(settings["refresh_interval"], bool)
-        or not 1 <= settings["refresh_interval"] <= 3600
-    ):
-        raise ValueError("Refresh interval must be between 1 and 3600 seconds.")
     if settings["font"] not in {"David Libre", "Arial", "Georgia"}:
         raise ValueError("Font must be David Libre, Arial, or Georgia.")
     if (
@@ -127,15 +111,29 @@ def public_settings():
         key: settings[key]
         for key in (
             "display_title",
-            "background_color",
-            "background_opacity",
-            "refresh_interval",
             "font",
             "time_per_frame",
             "effect",
             "start_frame",
         )
     }
+
+def password_policy_error(password):
+    if (
+        len(password) < 10
+        or not any(character.isupper() for character in password)
+        or not any(character.islower() for character in password)
+        or not any(character.isdigit() for character in password)
+        or not any(
+            not character.isalnum() and not character.isspace()
+            for character in password
+        )
+    ):
+        return (
+            "Password must be at least 10 characters and include at least one "
+            "uppercase letter, one lowercase letter, one digit, and one special character."
+        )
+    return None
 
 ###############################################
 # Server handling
@@ -144,6 +142,26 @@ def public_settings():
 settings = load_settings()
 ADMIN_USERNAME = settings["admin_username"]
 ADMIN_PASSWORD_HASH = settings["admin_password_hash"]
+
+@app.before_request
+def enforce_password_change():
+    if (
+        not session.get("logged_in")
+        or not settings["admin_password_change_required"]
+        or not (
+            request.path == "/admin"
+            or request.path.startswith("/admin/")
+        )
+    ):
+        return None
+    if request.endpoint in {"admin_account", "save_admin_account"}:
+        return None
+    if request.method != "GET":
+        return jsonify({
+            "success": False,
+            "error": "You must change the administrator password before continuing.",
+        }), 403
+    return redirect(url_for("admin_account"))
 
 class MessageHTMLSanitizer(HTMLParser):
     allowed_tags = {"b", "strong", "i", "em", "ul", "li", "br", "p", "div"}
@@ -246,19 +264,37 @@ def get_donors():
         for donor in donors
     ]
 
+display_donor_cache = None
+
+def get_display_snapshot():
+    global display_donor_cache
+    try:
+        donors = get_donors()
+    except sqlite3.Error:
+        app.logger.exception("Could not read donor entries for display")
+        return {
+            "donors": display_donor_cache or [],
+            "connected": False,
+        }
+
+    display_donor_cache = donors
+    return {"donors": donors, "connected": True}
+
 # Public Route: Renders display layout
 @app.route('/')
 def display():
+    snapshot = get_display_snapshot()
     return render_template(
         'display.html',
-        donors=get_donors(),
+        donors=snapshot["donors"],
+        database_connected=snapshot["connected"],
         settings=public_settings(),
     )
 
 # JSON API Route: Allows the public display to refresh donor entries.
 @app.route('/api/data')
 def get_display_data():
-    response = jsonify({"donors": get_donors()})
+    response = jsonify(get_display_snapshot())
     response.headers["Cache-Control"] = "no-store"
     return response
 
@@ -272,6 +308,8 @@ def authenticate_user():
     password = request.form.get('password')
     if username == ADMIN_USERNAME and check_password_hash(ADMIN_PASSWORD_HASH, password):
         session['logged_in'] = True
+        if settings["admin_password_change_required"]:
+            return redirect(url_for('admin_account'))
         return redirect(url_for('admin'))
     else:
         return render_template('login.html', error="Invalid credentials")
@@ -295,7 +333,11 @@ def admin_settings():
 def admin_account():
     if not session.get('logged_in'):
         return redirect(url_for('login'))
-    return render_template('account.html', admin_username=ADMIN_USERNAME)
+    return render_template(
+        'account.html',
+        admin_username=ADMIN_USERNAME,
+        password_change_required=settings["admin_password_change_required"],
+    )
 
 @app.route('/admin/settings/save', methods=['POST'])
 def save_admin_settings():
@@ -308,29 +350,12 @@ def save_admin_settings():
         return jsonify({"success": False, "error": "Invalid settings payload."}), 400
 
     display_title = data.get("display_title")
-    background_color = data.get("background_color")
-    background_opacity = data.get("background_opacity")
-    refresh_interval = data.get("refresh_interval")
     font = data.get("font")
     time_per_frame = data.get("time_per_frame")
     effect = data.get("effect")
     start_frame = data.get("start_frame")
     if not isinstance(display_title, str):
         return jsonify({"success": False, "error": "Display title is required."}), 400
-    if not isinstance(background_color, str):
-        return jsonify({"success": False, "error": "Choose a valid background color."}), 400
-    if (
-        isinstance(background_opacity, bool)
-        or not isinstance(background_opacity, (int, float))
-        or not 0 <= background_opacity <= 1
-    ):
-        return jsonify({"success": False, "error": "Opacity must be between 0 and 1."}), 400
-    if (
-        isinstance(refresh_interval, bool)
-        or not isinstance(refresh_interval, int)
-        or not 1 <= refresh_interval <= 3600
-    ):
-        return jsonify({"success": False, "error": "Refresh interval must be 1–3600 seconds."}), 400
     if not isinstance(font, str) or font not in {"David Libre", "Arial", "Georgia"}:
         return jsonify({"success": False, "error": "Choose a valid font."}), 400
     if (
@@ -347,15 +372,9 @@ def save_admin_settings():
     display_title = display_title.strip()
     if not display_title or len(display_title) > 100:
         return jsonify({"success": False, "error": "Display title is required and may not exceed 100 characters."}), 400
-    if not re.fullmatch(r"#[0-9a-fA-F]{6}", background_color):
-        return jsonify({"success": False, "error": "Choose a valid background color."}), 400
-
     updated_settings = {
         **settings,
         "display_title": display_title,
-        "background_color": background_color.lower(),
-        "background_opacity": float(background_opacity),
-        "refresh_interval": refresh_interval,
         "font": font,
         "time_per_frame": time_per_frame,
         "effect": effect,
@@ -393,8 +412,12 @@ def save_admin_account():
         return jsonify({"success": False, "error": "Password is too long."}), 400
     if not check_password_hash(ADMIN_PASSWORD_HASH, current_password):
         return jsonify({"success": False, "error": "Current password is incorrect."}), 403
-    if new_password and len(new_password) < 8:
-        return jsonify({"success": False, "error": "New password must be at least 8 characters."}), 400
+    if settings["admin_password_change_required"] and not new_password:
+        return jsonify({"success": False, "error": "A new password is required before continuing."}), 400
+    if new_password:
+        policy_error = password_policy_error(new_password)
+        if policy_error:
+            return jsonify({"success": False, "error": policy_error}), 400
 
     updated_settings = {
         **settings,
@@ -403,6 +426,9 @@ def save_admin_account():
             generate_password_hash(new_password)
             if new_password
             else ADMIN_PASSWORD_HASH
+        ),
+        "admin_password_change_required": (
+            False if new_password else settings["admin_password_change_required"]
         ),
     }
     try:
@@ -414,7 +440,11 @@ def save_admin_account():
     settings = updated_settings
     ADMIN_USERNAME = settings["admin_username"]
     ADMIN_PASSWORD_HASH = settings["admin_password_hash"]
-    return jsonify({"success": True, "admin_username": ADMIN_USERNAME})
+    return jsonify({
+        "success": True,
+        "admin_username": ADMIN_USERNAME,
+        "password_change_required": settings["admin_password_change_required"],
+    })
 
 @app.route('/admin/create', methods=['POST'])
 def create_donor():
