@@ -8,10 +8,15 @@ from flask import Flask, render_template, request, redirect, session, url_for, j
 from markupsafe import Markup
 import sqlite3
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 app = Flask(__name__)
 # A secure, unpredictable secret key is generated automatically on startup
 app.secret_key = os.environ.get("SECRET_KEY", os.urandom(24))
+
+app.wsgi_app = ProxyFix(
+    app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1
+)
 
 if os.path.exists('/app'):
     DB_PATH = '/app/data/data.db'
