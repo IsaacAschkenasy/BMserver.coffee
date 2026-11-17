@@ -1,10 +1,16 @@
 services:
   coffee:
     image: isaacaschke/bmcoffee
-    ports:
-      - "5000:5000"
+    container_name: coffee
+    restart: unless-stopped
+    networks:
+      - proxy-net
     volumes:
       - coffee-data:/usr/data/coffee
 
 volumes:
   coffee-data:
+
+networks:
+  proxy-net:
+    external: true
