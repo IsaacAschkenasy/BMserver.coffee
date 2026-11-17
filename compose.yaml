@@ -1,0 +1,10 @@
+services:
+  coffee:
+    image: isaacaschke/bmcoffee
+    ports:
+      - "5000:5000"
+    volumes:
+      - coffee-data:/usr/data/coffee
+
+volumes:
+  coffee-data:
