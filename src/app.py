@@ -18,10 +18,7 @@ app.wsgi_app = ProxyFix(
     app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1
 )
 
-if os.path.exists('/app'):
-    DB_PATH = '/app/data/data.db'
-else:
-    DB_PATH = os.path.join(os.getcwd(), 'data.db')
+DB_PATH = os.environ.get("DB_PATH", os.path.join(os.getcwd(), "data.db"))
 SETTINGS_PATH = os.environ.get(
     "SETTINGS_PATH",
     os.path.join(os.path.dirname(os.path.abspath(__file__)), "settings.json"),
@@ -249,6 +246,8 @@ def init_db():
         cursor.execute("SELECT COUNT(*) FROM content")
         if cursor.fetchone()[0] == 0:
             conn.execute("INSERT INTO content (id, text) VALUES (1, 'Welcome to the display screen!')")
+
+init_db()
 
 def get_current_data():
     return "current data"
@@ -528,5 +527,4 @@ def logout():
     return redirect(url_for('login'))
 
 if __name__ == '__main__':
-    init_db()
     app.run(host='0.0.0.0', port=5000)

@@ -5,6 +5,8 @@ services:
     restart: unless-stopped
     networks:
       - proxy-net
+    environment:
+      DB_PATH: /usr/data/coffee/data.db
     volumes:
       - coffee-data:/usr/data/coffee
 
