@@ -10,7 +10,7 @@ COPY src ./src
 EXPOSE 5000
 
 # Setup an app user so the container doesn't run as the root user
-RUN useradd app
+RUN useradd --create-home app
 USER app
 
 CMD ["gunicorn", "-c", "src/gunicorn.conf.py", "--chdir", "src", "app:app"]
