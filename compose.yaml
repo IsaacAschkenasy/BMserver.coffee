@@ -1,6 +1,6 @@
 services:
   coffee:
-    image: isaacaschke/bmcoffee
+    image: isaacaschke/coffee
     container_name: coffee
     restart: unless-stopped
     networks:
