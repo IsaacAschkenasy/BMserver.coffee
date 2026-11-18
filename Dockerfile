@@ -13,4 +13,4 @@ EXPOSE 5000
 RUN useradd app
 USER app
 
-CMD ["gunicorn", "-c", "gunicorn.conf.py", "app:app"]
+CMD ["gunicorn", "-c", "src/gunicorn.conf.py", "app:app"]
