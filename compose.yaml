@@ -7,6 +7,7 @@ services:
       - proxy-net
     environment:
       DB_PATH: /usr/data/coffee/data.db
+      SETTINGS_PATH: /usr/data/coffee/settings.json
     volumes:
       - coffee-data:/usr/data/coffee
 

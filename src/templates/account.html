@@ -125,24 +125,29 @@
             <form id="account-form" class="account-form" action="{{ url_for('save_admin_account') }}">
                 <div class="field">
                     <label for="admin-username">Username</label>
-                    <input id="admin-username" name="admin_username" type="text" value="{{ admin_username }}" autocomplete="username" required maxlength="100">
+                    <input id="admin-username" name="admin_username" type="text" value="{{ admin_username }}" maxlength="100">
                 </div>
                 <div class="field">
                     <label for="current-password">Current password</label>
-                    <input id="current-password" name="current_password" type="password" autocomplete="current-password" required>
+                    <input id="current-password" name="current_password" type="password" autocomplete="current-password">
                 </div>
                 <div class="field">
                     <label for="new-password">New password</label>
-                    <input id="new-password" name="new_password" type="password" autocomplete="new-password" minlength="10" maxlength="1024" {% if password_change_required %}required{% endif %}>
-                    {% if password_change_required %}
-                    <p class="hint">You must change your password before continuing. Use at least 10 characters, including an uppercase letter, a lowercase letter, a digit, and a special character.</p>
-                    {% else %}
-                    <p class="hint">Leave blank to keep the current password. New passwords need at least 10 characters, including an uppercase letter, a lowercase letter, a digit, and a special character.</p>
-                    {% endif %}
+                    <input id="new-password" name="new_password" type="password" minlength="10" maxlength="1024" 
+                        {% if password_change_required %}
+                            required
+                        {% endif %}>
+                    <p class="hint">
+                        Change your password. 
+                        Use at least 10 characters, including an uppercase letter, a lowercase letter, a digit, and a special character.
+                    </p>
                 </div>
                 <div class="field">
                     <label for="confirm-password">Confirm new password</label>
-                    <input id="confirm-password" name="confirm_password" type="password" autocomplete="new-password" minlength="10" maxlength="1024" {% if password_change_required %}required{% endif %}>
+                    <input id="confirm-password" name="confirm_password" type="password" autocomplete="new-password" minlength="10" maxlength="1024" 
+                        {% if password_change_required %}
+                            required
+                        {% endif %}>
                 </div>
                 <div class="actions">
                     <button type="submit">Save account</button>
@@ -169,6 +174,39 @@
                     return;
                 }
 
+                if (newPassword.length > 0 && newPassword.length < 10) {
+                    accountStatus.textContent = 'New password must be at least 10 characters long.';
+                    accountStatus.classList.add('error');
+                    return;
+                }
+
+                if (newPassword.length > 1024) {
+                    accountStatus.textContent = 'New password must be at most 1024 characters long.';
+                    accountStatus.classList.add('error');
+                    return;
+                }
+
+                if (newPassword.length > 0) {
+                    const passwordStrengthRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).+$/;
+                    if (!passwordStrengthRegex.test(newPassword)) {
+                        accountStatus.textContent = 'New password must include at least one uppercase letter, one lowercase letter, one digit, and one special character.';
+                        accountStatus.classList.add('error');
+                        return;
+                    }
+                }
+
+                if (passwordChangeRequired && newPassword.length === 0) {
+                    accountStatus.textContent = 'New password is required.';
+                    accountStatus.classList.add('error');
+                    return;
+                }
+
+                if (!passwordChangeRequired && newPassword.length === 0 && accountForm.elements.current_password.value.length === 0) {
+                    accountStatus.textContent = 'Current password is required to change the username.';
+                    accountStatus.classList.add('error');
+                    return;
+                }
+
                 accountSaveButton.disabled = true;
                 accountStatus.textContent = 'Saving…';
                 try {
@@ -180,21 +218,15 @@
                         },
                         body: JSON.stringify({
                             admin_username: accountForm.elements.admin_username.value,
-                            current_password: accountForm.elements.current_password.value,
+                            ...(!passwordChangeRequired && {
+                                current_password: accountForm.elements.current_password.value,
+                            }),
                             new_password: newPassword,
                         }),
                     });
                     const result = await response.json();
                     if (!response.ok || result.success !== true) {
                         throw new Error(result.error || 'Could not save account settings.');
-                    }
-                    accountForm.elements.admin_username.value = result.admin_username;
-                    accountForm.elements.current_password.value = '';
-                    accountForm.elements.new_password.value = '';
-                    accountForm.elements.confirm_password.value = '';
-                    if (passwordChangeRequired) {
-                        window.location.assign(adminUrl);
-                        return;
                     }
                     accountStatus.textContent = 'Account settings saved.';
                 } catch (error) {

@@ -18,11 +18,8 @@ app.wsgi_app = ProxyFix(
     app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1
 )
 
-DB_PATH = os.environ.get("DB_PATH", os.path.join(os.getcwd(), "data.db"))
-SETTINGS_PATH = os.environ.get(
-    "SETTINGS_PATH",
-    os.path.join(os.path.dirname(os.path.abspath(__file__)), "settings.json"),
-)
+DB_PATH = os.environ.get("DB_PATH")
+SETTINGS_PATH = os.environ.get("SETTINGS_PATH")
 
 def default_settings():
     return {
@@ -88,7 +85,7 @@ def load_settings():
         raise RuntimeError(f"Invalid settings in {SETTINGS_PATH}: {error}") from error
 
 def save_settings(settings):
-    directory = os.path.dirname(SETTINGS_PATH) or "."
+    directory = os.path.dirname(SETTINGS_PATH)
     os.makedirs(directory, exist_ok=True)
     file_descriptor, temporary_path = tempfile.mkstemp(
         prefix=".settings-", suffix=".json", dir=directory
@@ -404,7 +401,7 @@ def save_admin_account():
         return jsonify({"success": False, "error": "Invalid account settings payload."}), 400
 
     admin_username = data.get("admin_username")
-    current_password = data.get("current_password")
+    current_password = data.get("current_password", "")
     new_password = data.get("new_password", "")
     if not isinstance(admin_username, str) or not isinstance(current_password, str) or not isinstance(new_password, str):
         return jsonify({"success": False, "error": "Username and password values must be text."}), 400
@@ -412,12 +409,19 @@ def save_admin_account():
     admin_username = admin_username.strip()
     if not admin_username or len(admin_username) > 100:
         return jsonify({"success": False, "error": "Username is required and may not exceed 100 characters."}), 400
+
+    # check password length
     if len(current_password) > 1024 or len(new_password) > 1024:
         return jsonify({"success": False, "error": "Password is too long."}), 400
+
+    # check current password
     if not check_password_hash(ADMIN_PASSWORD_HASH, current_password):
         return jsonify({"success": False, "error": "Current password is incorrect."}), 403
+
+    # enforce new password if required
     if settings["admin_password_change_required"] and not new_password:
         return jsonify({"success": False, "error": "A new password is required before continuing."}), 400
+    
     if new_password:
         policy_error = password_policy_error(new_password)
         if policy_error:
